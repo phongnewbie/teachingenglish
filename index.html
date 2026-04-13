@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TOEIC Full Test Demo</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="homePage">
+  <div class="app-wrap">
+    <div class="hero">
+      <h1>Chinh phục <span>TOEIC Full Test</span></h1>
+      <p>Luyện đề TOEIC với đề thi thật và chấm điểm tự động</p>
+    </div>
+
+    <div class="top-row">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+          <circle cx="11" cy="11" r="7"></circle>
+          <line x1="16.65" y1="16.65" x2="21" y2="21"></line>
+        </svg>
+        <input id="searchInput" type="text" placeholder="Tìm kiếm bộ đề...">
+      </div>
+
+      <div class="status-text">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M9 12l2 2 4-4"></path>
+        </svg>
+        <span>Chưa làm</span>
+      </div>
+    </div>
+
+    <div class="tabs" id="seriesTabs">
+      <div class="tab active" data-series="ets2026">ETS 2026 (10)</div>
+      <div class="tab" data-series="ets2024">ETS 2024 (10)</div>
+      <div class="tab">ETS 2023 (10)</div>
+      <div class="tab">ETS 2022 (10)</div>
+      <div class="tab">ETS 2021 (5)</div>
+      <div class="tab">ETS 2020 (10)</div>
+      <div class="tab">ETS 2019 (0)</div>
+      <div class="tab">YBM 2025 (0)</div>
+    </div>
+
+    <div class="test-grid" id="testGrid"></div>
+  </div>
+</div>
+
+<div class="modal" id="modeModal">
+  <div class="modal-box">
+    <button class="close-modal" id="closeModalBtn" type="button">&times;</button>
+    <h3 class="modal-title">Chọn chế độ</h3>
+    <div class="modal-sub" id="modalTestName">Test 1</div>
+
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="tabExam" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"></path>
+          <path d="M14 2v5h5"></path>
+        </svg>
+        <span>Luyện thi</span>
+      </button>
+      <button class="mode-tab" id="tabPractice" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+          <circle cx="12" cy="12" r="8"></circle>
+          <circle cx="12" cy="12" r="4"></circle>
+        </svg>
+        <span>Luyện tập</span>
+      </button>
+    </div>
+
+    <div class="practice-note" id="practiceNote">
+      <strong>Chế độ Luyện tập:</strong> Xem đáp án và giải thích ngay sau mỗi câu/nhóm câu hỏi.
+    </div>
+
+    <div id="examPanel">
+      <div class="option-card primary">
+        <div class="option-head">
+          <div class="option-left">
+            <div class="icon-box icon-blue">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"></path>
+                <path d="M14 2v5h5"></path>
+                <line x1="9" y1="13" x2="15" y2="13"></line>
+                <line x1="9" y1="17" x2="15" y2="17"></line>
+              </svg>
+            </div>
+            <div>
+              <div class="option-title">Full Test (200 câu)</div>
+              <div class="option-desc">Làm đầy đủ đề thi như thi thật - 2 tiếng</div>
+              <div class="pills">
+                <div class="pill">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <polyline points="12,7 12,12 15,14"></polyline>
+                  </svg>
+                  120 phút
+                </div>
+                <div class="pill">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                    <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"></path>
+                    <path d="M14 2v5h5"></path>
+                  </svg>
+                  200 câu
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button class="start-btn" id="startFullBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <polygon points="8,5 19,12 8,19"></polygon>
+            </svg>
+            <span>Bắt đầu</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="option-card">
+        <div class="option-head" style="margin-bottom:16px">
+          <div class="option-left">
+            <div class="icon-box icon-green">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                <circle cx="12" cy="12" r="8"></circle>
+                <circle cx="12" cy="12" r="4"></circle>
+              </svg>
+            </div>
+            <div>
+              <div class="option-title">Thi theo Part</div>
+              <div class="option-desc">Chọn Part cụ thể để thi thử</div>
+            </div>
+          </div>
+          <button class="start-btn" id="startPartExamBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <polygon points="8,5 19,12 8,19"></polygon>
+            </svg>
+            <span>Bắt đầu</span>
+          </button>
+        </div>
+
+        <div class="part-list" id="examPartList"></div>
+      </div>
+    </div>
+
+    <div id="practicePanel" class="hidden">
+      <div class="option-card">
+        <div class="option-head" style="margin-bottom:16px">
+          <div class="option-left">
+            <div class="icon-box icon-green">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+                <path d="M20 6L9 17l-5-5"></path>
+              </svg>
+            </div>
+            <div>
+              <div class="option-title">Chọn Part để luyện tập</div>
+            </div>
+          </div>
+          <button class="start-btn" id="startPracticeBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <polygon points="8,5 19,12 8,19"></polygon>
+            </svg>
+            <span>Bắt đầu</span>
+          </button>
+        </div>
+
+        <div class="part-list" id="practicePartList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="examPage" class="page-hidden">
+  <div class="exam-shell">
+    <div class="exam-topbar">
+      <div class="exam-top-left">
+        <div class="exam-chip" id="examPageTitle">Test 1</div>
+        <div class="exam-chip" id="examPageMode">Luyện thi</div>
+        <div class="exam-chip" id="examPagePart">All</div>
+      </div>
+      <div class="exam-top-right">
+        <div class="exam-chip" id="questionCounter">Câu 1 / 1</div>
+        <div class="exam-chip" id="examTimer">--:--</div>
+        <button class="exam-quit" id="backHomeBtn" type="button">Thoát</button>
+      </div>
+    </div>
+
+    <div class="exam-main">
+      <div class="exam-left">
+        <div class="part-tag" id="questionPartTag">PART 1</div>
+        <div class="exam-image-wrap">
+          <img id="questionImage" src="" alt="question image">
+        </div>
+      </div>
+
+      <div class="exam-right">
+        <div class="exam-question-head">
+          <h2 id="questionHeadTitle">Listening Questions 1 of 6</h2>
+        </div>
+
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+
+        <div class="question-box">
+          <div class="question-label">Question</div>
+          <div class="question-text" id="questionText"></div>
+        </div>
+
+        <div class="answers" id="answersWrap"></div>
+
+        <div class="explain-box" id="explainBox"></div>
+
+        <div class="exam-nav">
+          <button class="nav-btn" id="prevBtn" type="button">Câu trước</button>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="nav-btn" id="openQuestionListBtn" type="button">Danh sách câu</button>
+            <button class="nav-btn" id="submitBtn" type="button">Nộp bài</button>
+            <button class="nav-btn primary" id="nextBtn" type="button">Câu sau</button>
+          </div>
+        </div>
+
+        <div class="qdrawer-backdrop" id="qDrawerBackdrop"></div>
+        <aside class="qdrawer" id="qDrawer" aria-hidden="true">
+          <div class="qdrawer-head">
+            <div class="qdrawer-title">Danh sách câu</div>
+            <button class="qdrawer-close" id="closeQDrawerBtn" type="button">&times;</button>
+          </div>
+          <div class="qdrawer-meta" id="qDrawerMeta"></div>
+          <div class="qdrawer-grid" id="qDrawerGrid"></div>
+        </aside>
+
+        <div class="result-box" id="resultBox">
+          <div class="result-title">Kết quả</div>
+          <div class="result-score" id="resultScore"></div>
+          <div class="result-score" id="resultModeText"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="index.js"></script>
+</body>
+</html>
