@@ -224,13 +224,116 @@
     }
   }
 
-  function showResultPage(summaryText, detailsHtml){
+  function showResultPage(summaryText){
     if(!resultPage) return;
     examPage.classList.add('page-hidden');
     resultPage.classList.remove('page-hidden');
     if(resultPageSummary) resultPageSummary.textContent = summaryText || '';
-    if(resultPageDetails) resultPageDetails.innerHTML = detailsHtml || '';
+    renderResultPageContent();
     window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function answerLetter(idx){
+    if(idx === null || idx === undefined) return null;
+    return ['A','B','C','D'][idx] || '?';
+  }
+
+  function renderResultPageContent(){
+    if(!resultPageDetails) return;
+    resultPageDetails.innerHTML = '';
+
+    const hint = document.createElement('p');
+    hint.className = 'result-page-hint';
+    hint.textContent = 'Nhấn vào số câu để xem giải thích chi tiết.';
+
+    const legend = document.createElement('div');
+    legend.className = 'result-legend';
+    legend.innerHTML = ''
+      + '<span class="result-legend-item"><span class="result-dot is-correct"></span> Đúng</span>'
+      + '<span class="result-legend-item"><span class="result-dot is-wrong"></span> Sai</span>'
+      + '<span class="result-legend-item"><span class="result-dot is-unanswered"></span> Chưa làm</span>';
+
+    const scroll = document.createElement('div');
+    scroll.className = 'result-grid-scroll';
+
+    let lastPart = null;
+    let sectionGrid = null;
+
+    for(let i = 0; i < activeQuestions.length; i++){
+      const q = activeQuestions[i];
+      const part = q.part || 'unknown';
+      if(part !== lastPart){
+        lastPart = part;
+        const label = document.createElement('div');
+        label.className = 'qdrawer-section-label';
+        label.textContent = getPartDrawerTitle(part, q);
+        scroll.appendChild(label);
+
+        sectionGrid = document.createElement('div');
+        sectionGrid.className = 'qdrawer-section-grid result-part-grid';
+        scroll.appendChild(sectionGrid);
+      }
+
+      const ua = userAnswers[i];
+      const answered = ua !== null && ua !== undefined;
+      const isCorrect = answered && ua === q.correct;
+
+      const cell = document.createElement('button');
+      cell.type = 'button';
+      cell.className = 'result-qcell';
+      if(answered){
+        cell.classList.add(isCorrect ? 'is-correct' : 'is-wrong');
+      }else{
+        cell.classList.add('is-unanswered');
+      }
+      cell.textContent = String(i + 1);
+      cell.setAttribute('data-q', String(i));
+      cell.setAttribute('aria-label', 'Câu ' + (i + 1));
+      sectionGrid.appendChild(cell);
+    }
+
+    const panel = document.createElement('div');
+    panel.id = 'resultExplainPanel';
+    panel.className = 'result-explain-panel';
+    panel.hidden = true;
+    panel.innerHTML = '<div class="result-explain-inner"></div>';
+
+    resultPageDetails.appendChild(hint);
+    resultPageDetails.appendChild(legend);
+    resultPageDetails.appendChild(scroll);
+    resultPageDetails.appendChild(panel);
+  }
+
+  function openResultExplain(index){
+    const panel = document.getElementById('resultExplainPanel');
+    if(!panel || !resultPageDetails) return;
+    const q = activeQuestions[index];
+    if(!q) return;
+    const inner = panel.querySelector('.result-explain-inner');
+    if(!inner) return;
+
+    resultPageDetails.querySelectorAll('.result-qcell').forEach(function(el){
+      el.classList.toggle('is-active', Number(el.getAttribute('data-q')) === index);
+    });
+
+    const ua = userAnswers[index];
+    const chosenLabel = ua === null || ua === undefined ? 'Chưa chọn' : answerLetter(ua);
+    const correctLabel = answerLetter(q.correct);
+    const isCorrect = ua !== null && ua !== undefined && ua === q.correct;
+
+    inner.innerHTML = ''
+      + '<div class="result-explain-head">'
+      +   '<span class="result-explain-num">Câu ' + (index + 1) + '</span>'
+      +   '<span class="result-explain-badge ' + (isCorrect ? 'ok' : 'bad') + '">' + (isCorrect ? 'Đúng' : 'Sai') + '</span>'
+      + '</div>'
+      + '<div class="result-explain-choices">'
+      +   '<span>Bạn chọn: <strong>' + chosenLabel + '</strong></span>'
+      +   '<span>Đáp án đúng: <strong>' + correctLabel + '</strong></span>'
+      + '</div>'
+      + '<div class="result-explain-body">' + buildExplainText(q) + '</div>';
+
+    panel.hidden = false;
+    panel.scrollIntoView({behavior:'smooth', block:'nearest'});
   }
 
   function goHomeFromAnyPage(){
@@ -272,6 +375,16 @@
     }, 1000);
   }
 
+  function getPartDrawerTitle(partKey, q){
+    const pc = partConfig.find(p => p.key === partKey);
+    if(pc && !pc.full && pc.section !== 'ALL'){
+      return `${pc.section} — ${pc.name}`;
+    }
+    if(q && q.partLabel) return String(q.partLabel);
+    if(partKey && partKey !== 'unknown') return getPartDisplay(partKey);
+    return 'Câu hỏi';
+  }
+
   function renderQuestionList(){
     if(!qDrawerMeta || !qDrawerGrid) return;
     const total = activeQuestions.length;
@@ -280,7 +393,25 @@
     qDrawerMeta.textContent = `Đã làm: ${answered} • Chưa làm: ${unanswered} • Tổng: ${total}`;
 
     qDrawerGrid.innerHTML = '';
+    let lastPart = null;
+    let sectionGrid = null;
+
     for(let i = 0; i < total; i++){
+      const q = activeQuestions[i];
+      const part = q.part || 'unknown';
+
+      if(part !== lastPart){
+        lastPart = part;
+        const label = document.createElement('div');
+        label.className = 'qdrawer-section-label';
+        label.textContent = getPartDrawerTitle(part, q);
+        qDrawerGrid.appendChild(label);
+
+        sectionGrid = document.createElement('div');
+        sectionGrid.className = 'qdrawer-section-grid';
+        qDrawerGrid.appendChild(sectionGrid);
+      }
+
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'qbtn';
@@ -292,7 +423,6 @@
       btn.classList.toggle('is-current', i === currentQuestionIndex);
 
       if(hasSubmitted){
-        const q = activeQuestions[i];
         if(isAnswered && userAnswers[i] === q.correct) btn.classList.add('is-correct');
         if(isAnswered && userAnswers[i] !== q.correct) btn.classList.add('is-wrong');
       }
@@ -302,7 +432,7 @@
         renderQuestion();
         setQDrawer(false);
       });
-      qDrawerGrid.appendChild(btn);
+      sectionGrid.appendChild(btn);
     }
   }
 
@@ -635,34 +765,15 @@
     hasSubmitted = true;
     stopCountdown();
     let correct = 0;
-    const wrongDetails = [];
     activeQuestions.forEach((q, index) => {
-      if(userAnswers[index] === q.correct){
-        correct++;
-      }else{
-        const chosen = userAnswers[index];
-        const chosenLabel = chosen === null || chosen === undefined ? 'Chưa chọn' : ['A','B','C','D'][chosen];
-        const correctLabel = ['A','B','C','D'][q.correct];
-        wrongDetails.push(
-          '<div style="margin-top:10px;padding:10px;border:1px solid #e1e8f0;border-radius:10px;background:#fff;">' +
-            '<div><strong>Câu ' + (index + 1) + '</strong> - Bạn chọn: ' + chosenLabel + ' | Đáp án đúng: ' + correctLabel + '</div>' +
-            '<div style="margin-top:6px;">' + buildExplainText(q) + '</div>' +
-          '</div>'
-        );
-      }
+      if(userAnswers[index] === q.correct) correct++;
     });
 
     renderQuestion();
-    const summary = 'Số câu đúng: ' + correct + ' / ' + activeQuestions.length;
-    if(currentMode === 'practice'){
-      showResultPage(summary + ' - Chế độ luyện tập', '');
-      return;
-    }
-    if(wrongDetails.length === 0){
-      showResultPage(summary + ' - Bạn làm đúng tất cả câu.', '');
-    }else{
-      showResultPage(summary, wrongDetails.join('').replaceAll('style="margin-top:10px;padding:10px;border:1px solid #e1e8f0;border-radius:10px;background:#fff;"', 'class="wrong-item"'));
-    }
+    const summary = 'Số câu đúng: ' + correct + ' / ' + activeQuestions.length
+      + (currentMode === 'practice' ? ' • Chế độ luyện tập' : '')
+      + (correct === activeQuestions.length && activeQuestions.length > 0 ? ' • Chúc mừng, bạn làm đúng hết!' : '');
+    showResultPage(summary);
   }
 
   searchInput.addEventListener('input', function(){
@@ -728,6 +839,15 @@
       examPage.classList.remove('page-hidden');
       renderQuestion();
       window.scrollTo({top:0,behavior:'smooth'});
+    });
+  }
+  if(resultPage){
+    resultPage.addEventListener('click', function(e){
+      const cell = e.target.closest('.result-qcell');
+      if(!cell) return;
+      const i = Number(cell.getAttribute('data-q'));
+      if(!Number.isFinite(i)) return;
+      openResultExplain(i);
     });
   }
 
