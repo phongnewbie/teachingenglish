@@ -57,6 +57,7 @@
   const questionPartTag = document.getElementById('questionPartTag');
   const questionHeadTitle = document.getElementById('questionHeadTitle');
   const questionImage = document.getElementById('questionImage');
+  const questionAudio = document.getElementById('questionAudio');
   const questionText = document.getElementById('questionText');
   const answersWrap = document.getElementById('answersWrap');
   const explainBox = document.getElementById('explainBox');
@@ -67,6 +68,11 @@
   const resultBox = document.getElementById('resultBox');
   const resultScore = document.getElementById('resultScore');
   const resultModeText = document.getElementById('resultModeText');
+  const resultPage = document.getElementById('resultPage');
+  const resultPageSummary = document.getElementById('resultPageSummary');
+  const resultPageDetails = document.getElementById('resultPageDetails');
+  const reviewAnswersBtn = document.getElementById('reviewAnswersBtn');
+  const resultBackHomeBtn = document.getElementById('resultBackHomeBtn');
   const examTimer = document.getElementById('examTimer');
   const backHomeBtn = document.getElementById('backHomeBtn');
   const seriesTabs = document.getElementById('seriesTabs');
@@ -216,6 +222,31 @@
       clearInterval(countdownTimer);
       countdownTimer = null;
     }
+  }
+
+  function showResultPage(summaryText, detailsHtml){
+    if(!resultPage) return;
+    examPage.classList.add('page-hidden');
+    resultPage.classList.remove('page-hidden');
+    if(resultPageSummary) resultPageSummary.textContent = summaryText || '';
+    if(resultPageDetails) resultPageDetails.innerHTML = detailsHtml || '';
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function goHomeFromAnyPage(){
+    examPage.classList.add('page-hidden');
+    if(resultPage) resultPage.classList.add('page-hidden');
+    homePage.classList.remove('page-hidden');
+    hasSubmitted = false;
+    stopCountdown();
+    if(questionAudio){
+      questionAudio.pause();
+      questionAudio.removeAttribute('src');
+    }
+    remainingSeconds = 0;
+    updateTimerChip();
+    resultBox.classList.remove('show');
+    window.scrollTo({top:0,behavior:'smooth'});
   }
 
   function updateTimerChip(){
@@ -440,6 +471,41 @@
     return item ? item.name : partKey;
   }
 
+  function getAudioSrcForQuestion(q){
+    if(!q) return '';
+    if(currentSeries !== 'ets2024') return '';
+    if(!/^part[1-4]$/i.test(q.part || '')) return '';
+    const id = Number(q.id);
+    if(!Number.isFinite(id)) return '';
+
+    const base = 'drive-download-20260414T040048Z-3-001';
+    if(id >= 1 && id <= 31){
+      return encodeURI(base + '/2024-Test_1-' + id + '.mp3');
+    }
+    if(id >= 32 && id <= 46){
+      const start = 32 + Math.floor((id - 32) / 3) * 3;
+      const end = start + 2;
+      return encodeURI(base + '/part 3/2024-Test_1-' + start + '-' + end + '.mp3');
+    }
+    return '';
+  }
+
+  function getListeningImageFallback(q){
+    if(!q) return '';
+    if(currentSeries !== 'ets2024') return '';
+    if(!/^part[1-4]$/i.test(q.part || '')) return '';
+    const id = Number(q.id);
+    if(!Number.isFinite(id)) return '';
+
+    if(id >= 1 && id <= 6) return 'img/Picture' + id + '.png';
+    if(id >= 62 && id <= 64) return 'img/Picture7.png';
+    if(id >= 65 && id <= 67) return 'img/Picture8.png';
+    if(id >= 68 && id <= 70) return 'img/Picture9.png';
+    if(id >= 95 && id <= 97) return 'img/Picture10.png';
+    if(id >= 98 && id <= 100) return 'img/Picture11.png';
+    return '';
+  }
+
   function startExam(mode, partKey, fullTest){
     closeModal();
 
@@ -477,12 +543,30 @@
     questionPartTag.textContent = q.partLabel;
     questionHeadTitle.textContent = q.title;
     const imgWrap = questionImage.closest('.exam-image-wrap');
-    if(q.image){
-      questionImage.src = q.image;
+    const imageSrc = q.image || getListeningImageFallback(q);
+    if(imageSrc){
+      questionImage.src = imageSrc;
       imgWrap.classList.remove('is-hidden');
     }else{
       questionImage.removeAttribute('src');
       imgWrap.classList.add('is-hidden');
+    }
+
+    const audioWrap = questionAudio ? questionAudio.closest('.audio-wrap') : null;
+    const audioSrc = getAudioSrcForQuestion(q);
+    if(questionAudio && audioWrap){
+      if(audioSrc){
+        if(questionAudio.getAttribute('src') !== audioSrc){
+          questionAudio.pause();
+          questionAudio.setAttribute('src', audioSrc);
+          questionAudio.load();
+        }
+        audioWrap.classList.remove('is-hidden');
+      }else{
+        questionAudio.pause();
+        questionAudio.removeAttribute('src');
+        audioWrap.classList.add('is-hidden');
+      }
     }
     questionText.textContent = q.question;
 
@@ -569,19 +653,15 @@
     });
 
     renderQuestion();
-    resultBox.classList.add('show');
-    resultScore.textContent = 'Số câu đúng: ' + correct + ' / ' + activeQuestions.length;
+    const summary = 'Số câu đúng: ' + correct + ' / ' + activeQuestions.length;
     if(currentMode === 'practice'){
-      resultModeText.textContent = 'Chế độ luyện tập: đáp án và giải thích đã hiện ngay sau mỗi câu.';
+      showResultPage(summary + ' - Chế độ luyện tập', '');
       return;
     }
-
     if(wrongDetails.length === 0){
-      resultModeText.textContent = 'Chế độ luyện thi: bạn làm đúng tất cả câu.';
+      showResultPage(summary + ' - Bạn làm đúng tất cả câu.', '');
     }else{
-      resultModeText.innerHTML =
-        '<div style="font-weight:700;margin-bottom:8px;">Các câu sai và giải thích:</div>' +
-        wrongDetails.join('');
+      showResultPage(summary, wrongDetails.join('').replaceAll('style="margin-top:10px;padding:10px;border:1px solid #e1e8f0;border-radius:10px;background:#fff;"', 'class="wrong-item"'));
     }
   }
 
@@ -640,16 +720,16 @@
 
   submitBtn.addEventListener('click', submitExam);
 
-  backHomeBtn.addEventListener('click', function(){
-    examPage.classList.add('page-hidden');
-    homePage.classList.remove('page-hidden');
-    hasSubmitted = false;
-    stopCountdown();
-    remainingSeconds = 0;
-    updateTimerChip();
-    resultBox.classList.remove('show');
-    window.scrollTo({top:0,behavior:'smooth'});
-  });
+  backHomeBtn.addEventListener('click', goHomeFromAnyPage);
+  if(resultBackHomeBtn) resultBackHomeBtn.addEventListener('click', goHomeFromAnyPage);
+  if(reviewAnswersBtn){
+    reviewAnswersBtn.addEventListener('click', function(){
+      if(resultPage) resultPage.classList.add('page-hidden');
+      examPage.classList.remove('page-hidden');
+      renderQuestion();
+      window.scrollTo({top:0,behavior:'smooth'});
+    });
+  }
 
   async function loadDataJson(){
     const res = await fetch('data.json');

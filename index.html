@@ -192,6 +192,9 @@
         <div class="exam-image-wrap">
           <img id="questionImage" src="" alt="question image">
         </div>
+        <div class="audio-wrap" id="audioWrap">
+          <audio id="questionAudio" controls preload="metadata"></audio>
+        </div>
       </div>
 
       <div class="exam-right">
@@ -237,6 +240,32 @@
           <div class="result-score" id="resultModeText"></div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<div id="resultPage" class="page-hidden">
+  <div class="app-wrap">
+    <div class="option-card">
+      <div class="option-head" style="margin-bottom:12px">
+        <div class="option-left">
+          <div class="icon-box icon-blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2">
+              <path d="M9 12l2 2 4-4"></path>
+              <circle cx="12" cy="12" r="9"></circle>
+            </svg>
+          </div>
+          <div>
+            <div class="option-title">Kết quả bài làm</div>
+            <div class="option-desc" id="resultPageSummary"></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="start-btn" id="reviewAnswersBtn" type="button">Xem lại bài làm</button>
+          <button class="start-btn" id="resultBackHomeBtn" type="button">Về trang chủ</button>
+        </div>
+      </div>
+      <div id="resultPageDetails"></div>
     </div>
   </div>
 </div>

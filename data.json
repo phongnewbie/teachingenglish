@@ -115,22 +115,6 @@
   ],
   "ets2024": [
     {
-      "id": 1,
-      "part": "part1",
-      "partLabel": "PART 1",
-      "title": "PART 1 — Câu 1",
-      "image": "https://lh3.googleusercontent.com/keep-bbsk/AFgXFlIrjBr2hN-08qrWTyzLWnzRYQHNwDWLmah0P_hgR9D9CBRJR9NiRWftnDvzr3JNnaP6UguCHtknn3aK0Pw9oMTaJj8fqroOa0n8UrzChUdeTL-tqsM4dg=s512",
-      "question": "(Nghe / xem hình và chọn đáp án phù hợp.)",
-      "answers": [
-        "She's eating in a picnic area.",
-        "She's waiting in line at a food truck.",
-        "She's wiping off a bench.",
-        "She's throwing away a plate."
-      ],
-      "correct": 0,
-      "explain": ""
-    },
-    {
       "id": 101,
       "part": "part5",
       "partLabel": "PART 5",
