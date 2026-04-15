@@ -51,6 +51,7 @@
 
   const examPartList = document.getElementById('examPartList');
   const practicePartList = document.getElementById('practicePartList');
+  const practiceTimeInput = document.getElementById('practiceTimeInput');
 
   const startFullBtn = document.getElementById('startFullBtn');
   const startPartExamBtn = document.getElementById('startPartExamBtn');
@@ -667,14 +668,29 @@
   }
 
   function getQuestionsByPart(partKey){
-    if(partKey === 'all') return demoQuestions.slice();
-    return demoQuestions.filter(q => q.part === partKey);
+    if(partKey === 'all') return getFullTestQuestionBank();
+
+    // Luôn map đúng nguồn dữ liệu theo Part, không phụ thuộc tab series đang chọn.
+    if(/^part[1-4]$/i.test(partKey)){
+      return bankEts2026.filter(q => q.part === partKey);
+    }
+    if(/^part[5-7]$/i.test(partKey)){
+      return bankEts2024.filter(q => q.part === partKey);
+    }
+    return getFullTestQuestionBank().filter(q => q.part === partKey);
   }
 
   function getPartDisplay(partKey){
     if(partKey === 'all') return 'All Parts';
     const item = partConfig.find(p => p.key === partKey);
     return item ? item.name : partKey;
+  }
+
+  function getPracticeDurationSeconds(){
+    if(!practiceTimeInput) return 0;
+    const mins = Number(practiceTimeInput.value);
+    if(!Number.isFinite(mins) || mins <= 0) return 0;
+    return Math.floor(mins * 60);
   }
 
   function getAudioSrcForQuestion(q){
@@ -739,9 +755,14 @@
       const totalSeconds = isFull ? 120 * 60 : Math.max(60, activeQuestions.length * 36);
       startCountdown(totalSeconds);
     }else{
-      stopCountdown();
-      remainingSeconds = 0;
-      updateTimerChip();
+      const practiceSeconds = getPracticeDurationSeconds();
+      if(practiceSeconds > 0){
+        startCountdown(practiceSeconds);
+      }else{
+        stopCountdown();
+        remainingSeconds = 0;
+        updateTimerChip();
+      }
     }
 
     renderQuestion();
@@ -809,14 +830,6 @@
       const selected = userAnswers[currentQuestionIndex] === index;
       if(selected) item.classList.add('selected');
 
-      if(currentMode === 'practice' && userAnswers[currentQuestionIndex] !== null){
-        if(index === q.correct){
-          item.classList.add('correct');
-        }else if(index === userAnswers[currentQuestionIndex]){
-          item.classList.add('wrong');
-        }
-      }
-
       if(hasSubmitted){
         if(index === q.correct){
           item.classList.add('correct');
@@ -842,7 +855,7 @@
     const selectedAnswer = userAnswers[currentQuestionIndex];
     const isWrongAnswer = selectedAnswer !== null && selectedAnswer !== q.correct;
 
-    if((currentMode === 'practice' && isWrongAnswer) || (currentMode === 'exam' && hasSubmitted && isWrongAnswer)){
+    if(hasSubmitted && isWrongAnswer){
       explainBox.classList.add('show');
       explainBox.innerHTML = buildExplainText(q);
     }else{

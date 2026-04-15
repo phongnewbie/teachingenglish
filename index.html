@@ -72,7 +72,7 @@
     </div>
 
     <div class="practice-note" id="practiceNote">
-      <strong>Chế độ Luyện tập:</strong> Xem đáp án và giải thích ngay sau mỗi câu/nhóm câu hỏi.
+      <strong>Chế độ Luyện tập:</strong> Làm bài như Luyện thi, nộp bài xong mới xem kết quả và giải thích.
     </div>
 
     <div id="examPanel">
@@ -165,6 +165,12 @@
           </button>
         </div>
 
+        <div class="practice-time-row">
+          <label for="practiceTimeInput">Thời gian luyện tập (phút):</label>
+          <input id="practiceTimeInput" type="number" min="0" step="1" value="0">
+          <small>Nhập 0 để không giới hạn thời gian.</small>
+        </div>
+
         <div class="part-list" id="practicePartList"></div>
       </div>
     </div>
@@ -189,11 +195,11 @@
     <div class="exam-main">
       <div class="exam-left">
         <div class="part-tag" id="questionPartTag">PART 1</div>
-        <div class="exam-image-wrap">
-          <img id="questionImage" src="" alt="question image">
-        </div>
         <div class="audio-wrap" id="audioWrap">
           <audio id="questionAudio" controls preload="metadata"></audio>
+        </div>
+        <div class="exam-image-wrap">
+          <img id="questionImage" src="" alt="question image">
         </div>
       </div>
 
