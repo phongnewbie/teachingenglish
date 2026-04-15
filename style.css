@@ -524,6 +524,11 @@ button,input{font-family:inherit}
   width:100%;
   max-width:520px
 }
+.audio-wrap-top{
+  max-width:none;
+  margin:10px 0 14px;
+  padding:0 14px
+}
 .audio-wrap.is-hidden{
   display:none!important
 }

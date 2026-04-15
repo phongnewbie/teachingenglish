@@ -608,13 +608,10 @@
   }
 
   function bindPartEvents(){
+    // Luyện thi: auto chọn All 7 Parts, không cho chọn từng part.
     examPartList.querySelectorAll('.part-item').forEach(item => {
-      item.addEventListener('click', function(){
-        selectedExamPart = item.getAttribute('data-key');
-        examPartPicked = true;
-        renderPartList(examPartList, selectedExamPart, examPartPicked);
-        bindPartEvents();
-      });
+      item.style.pointerEvents = 'none';
+      item.style.opacity = item.getAttribute('data-key') === 'all' ? '1' : '.6';
     });
 
     practicePartList.querySelectorAll('.part-item').forEach(item => {
@@ -634,6 +631,10 @@
     if(mode === 'practice'){
       switchModalMode('practice');
     }else{
+      selectedExamPart = 'all';
+      examPartPicked = true;
+      renderPartList(examPartList, selectedExamPart, examPartPicked);
+      bindPartEvents();
       switchModalMode('exam');
     }
   }
@@ -846,6 +847,9 @@
       item.addEventListener('click', function(){
         if(hasSubmitted) return;
         userAnswers[currentQuestionIndex] = index;
+        if(currentQuestionIndex < activeQuestions.length - 1){
+          currentQuestionIndex++;
+        }
         renderQuestion();
       });
 
@@ -926,11 +930,8 @@
   });
 
   startPartExamBtn.addEventListener('click', function(){
-    if(!selectedExamPart){
-      alert('Bạn hãy chọn Part trước khi bắt đầu thi theo Part.');
-      return;
-    }
-    startExam('exam', selectedExamPart, false);
+    // Luyện thi luôn vào All 7 Parts.
+    startExam('exam', 'all', false);
   });
 
   startPracticeBtn.addEventListener('click', function(){
