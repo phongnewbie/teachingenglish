@@ -27,6 +27,7 @@
   let bankEts2026 = [];
   let bankEts2024 = [];
   let currentSeries = 'ets2026';
+  const FULL_LISTENING_AUDIO_SRC = encodeURI('2024-Practice-Set-TOEIC-Test-1--RAVU.mp3');
 
   const PROGRESS_KEY = 'toeic_progress_v1';
   let homeFilterUndoneOnly = false;
@@ -678,9 +679,15 @@
 
   function getAudioSrcForQuestion(q){
     if(!q) return '';
-    if(!/^part[1-4]$/i.test(q.part || '')) return '';
     const id = Number(q.id);
     if(!Number.isFinite(id)) return '';
+
+    // Chế độ luyện thi: dùng 1 file audio dài duy nhất cho câu 1-100
+    if(currentMode === 'exam' && id >= 1 && id <= 100){
+      return './' + FULL_LISTENING_AUDIO_SRC;
+    }
+
+    if(!/^part[1-4]$/i.test(q.part || '')) return '';
 
     const base = 'drive-download-20260414T040048Z-3-001';
     if(id >= 1 && id <= 31){
