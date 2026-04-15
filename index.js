@@ -28,10 +28,15 @@
   let bankEts2024 = [];
   let currentSeries = 'ets2026';
 
+  const PROGRESS_KEY = 'toeic_progress_v1';
+  let homeFilterUndoneOnly = false;
+
   const homePage = document.getElementById('homePage');
   const examPage = document.getElementById('examPage');
   const testGrid = document.getElementById('testGrid');
   const searchInput = document.getElementById('searchInput');
+  const statusText = document.querySelector('.status-text');
+  const statusTextLabel = statusText ? statusText.querySelector('span') : null;
 
   const modeModal = document.getElementById('modeModal');
   const closeModalBtn = document.getElementById('closeModalBtn');
@@ -445,9 +450,49 @@
     if(open) renderQuestionList();
   }
 
+  function safeParseJson(raw, fallback){
+    try{ return JSON.parse(raw); }catch(_e){ return fallback; }
+  }
+
+  function loadProgress(){
+    const raw = localStorage.getItem(PROGRESS_KEY);
+    const data = safeParseJson(raw || '', {});
+    if(!data || typeof data !== 'object') return {};
+    return data;
+  }
+
+  function saveProgress(data){
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(data || {}));
+  }
+
+  function getSeriesProgress(series){
+    const p = loadProgress();
+    const s = p && p[series] && typeof p[series] === 'object' ? p[series] : {};
+    return { all: p, series: s };
+  }
+
+  function setTestDone(series, testId, payload){
+    const p = loadProgress();
+    if(!p[series] || typeof p[series] !== 'object') p[series] = {};
+    p[series][String(testId)] = Object.assign({ done:true }, payload || {});
+    saveProgress(p);
+  }
+
+  function isTestDone(series, testId){
+    const p = loadProgress();
+    return !!(p && p[series] && p[series][String(testId)] && p[series][String(testId)].done);
+  }
+
+  function getTestMeta(series, testId){
+    const p = loadProgress();
+    return (p && p[series] && p[series][String(testId)]) ? p[series][String(testId)] : null;
+  }
+
   function applyQuestionBank(series){
     currentSeries = series;
     demoQuestions = series === 'ets2024' ? bankEts2024 : bankEts2026;
+    renderTests(tests);
+    applyHomeFilters();
   }
 
   function renderTests(items){
@@ -456,6 +501,14 @@
       const card = document.createElement('div');
       card.className = 'test-card';
       card.setAttribute('data-title', test.title.toLowerCase());
+      card.setAttribute('data-test-id', String(test.id));
+
+      const meta = getTestMeta(currentSeries, test.id);
+      const done = !!(meta && meta.done);
+      card.setAttribute('data-done', done ? '1' : '0');
+      const statusHtml = done
+        ? ('Đã làm' + (typeof meta.lastScore === 'number' ? (' • ' + meta.lastScore + 'đ') : ''))
+        : 'Chưa làm';
 
       card.innerHTML = `
         ${test.pro ? '<div class="pro-badge">PRO</div>' : ''}
@@ -478,7 +531,7 @@
             <span>120 phút</span>
           </div>
         </div>
-        <div class="card-status">Chưa làm</div>
+        <div class="card-status">${statusHtml}</div>
         <div class="card-actions">
           <button class="btn btn-main btn-exam" data-id="${test.id}" data-mode="exam" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -507,6 +560,21 @@
         openModal(mode);
       });
     });
+  }
+
+  function applyHomeFilters(){
+    if(!testGrid) return;
+    const keyword = (searchInput ? searchInput.value.trim().toLowerCase() : '');
+    testGrid.querySelectorAll('.test-card').forEach(card => {
+      const title = (card.getAttribute('data-title') || '');
+      const done = card.getAttribute('data-done') === '1';
+      const okKeyword = !keyword || title.includes(keyword);
+      const okStatus = !homeFilterUndoneOnly || !done;
+      card.style.display = (okKeyword && okStatus) ? '' : 'none';
+    });
+    if(statusTextLabel){
+      statusTextLabel.textContent = homeFilterUndoneOnly ? 'Chưa làm' : 'Tất cả';
+    }
   }
 
   function renderPartList(container, selectedKey, picked){
@@ -590,6 +658,13 @@
     }
   }
 
+  function getFullTestQuestionBank(){
+    if(bankEts2024 && bankEts2024.length){
+      return bankEts2026.concat(bankEts2024);
+    }
+    return bankEts2026.slice();
+  }
+
   function getQuestionsByPart(partKey){
     if(partKey === 'all') return demoQuestions.slice();
     return demoQuestions.filter(q => q.part === partKey);
@@ -603,7 +678,6 @@
 
   function getAudioSrcForQuestion(q){
     if(!q) return '';
-    if(currentSeries !== 'ets2024') return '';
     if(!/^part[1-4]$/i.test(q.part || '')) return '';
     const id = Number(q.id);
     if(!Number.isFinite(id)) return '';
@@ -622,7 +696,6 @@
 
   function getListeningImageFallback(q){
     if(!q) return '';
-    if(currentSeries !== 'ets2024') return '';
     if(!/^part[1-4]$/i.test(q.part || '')) return '';
     const id = Number(q.id);
     if(!Number.isFinite(id)) return '';
@@ -643,17 +716,20 @@
     examPage.classList.remove('page-hidden');
 
     currentMode = mode;
-    activeQuestions = fullTest ? demoQuestions.slice() : getQuestionsByPart(partKey);
+    // Nếu user chọn "All (7 Part)" trong mục "Thi theo Part" thì cũng phải là Full Test 200 câu
+    const isAllParts = partKey === 'all';
+    const isFull = !!fullTest || isAllParts;
+    activeQuestions = isFull ? getFullTestQuestionBank() : getQuestionsByPart(partKey);
     currentQuestionIndex = 0;
     userAnswers = new Array(activeQuestions.length).fill(null);
     hasSubmitted = false;
 
     examPageTitle.textContent = currentTest ? currentTest.title : 'Test';
     examPageMode.textContent = mode === 'practice' ? 'Luyện tập' : 'Luyện thi';
-    examPagePart.textContent = fullTest ? 'Full Test' : getPartDisplay(partKey);
+    examPagePart.textContent = isFull ? 'Full Test' : getPartDisplay(partKey);
 
     if(mode === 'exam'){
-      const totalSeconds = fullTest ? 120 * 60 : Math.max(60, activeQuestions.length * 36);
+      const totalSeconds = isFull ? 120 * 60 : Math.max(60, activeQuestions.length * 36);
       startCountdown(totalSeconds);
     }else{
       stopCountdown();
@@ -698,13 +774,26 @@
         audioWrap.classList.add('is-hidden');
       }
     }
-    questionText.textContent = q.question;
+    const qidNum = Number(q.id);
+    const hidePart2QuestionText = !hasSubmitted
+      && /^part2$/i.test(q.part || '')
+      && Number.isFinite(qidNum)
+      && qidNum >= 7
+      && qidNum <= 31;
+
+    questionText.textContent = hidePart2QuestionText ? '' : q.question;
 
     const progress = ((currentQuestionIndex + 1) / activeQuestions.length) * 100;
     progressFill.style.width = progress + '%';
 
     answersWrap.innerHTML = '';
     const letters = ['A','B','C','D'];
+    // Re-use qidNum above
+    const hideListeningOptionText = !hasSubmitted
+      && /^part[12]$/i.test(q.part || '')
+      && Number.isFinite(qidNum)
+      && qidNum >= 1
+      && qidNum <= 31;
 
     q.answers.forEach((answer, index) => {
       const item = document.createElement('div');
@@ -731,7 +820,7 @@
 
       item.innerHTML = `
         <div class="answer-letter">${letters[index]}</div>
-        <div class="answer-text">${answer}</div>
+        <div class="answer-text">${hideListeningOptionText ? '' : answer}</div>
       `;
 
       item.addEventListener('click', function(){
@@ -769,20 +858,37 @@
       if(userAnswers[index] === q.correct) correct++;
     });
 
+    const maxPoints = activeQuestions.length * 5;
+    const points = correct * 5;
+    if(resultScore) resultScore.textContent = 'Điểm: ' + points + ' / ' + maxPoints;
+
+    if(currentMode === 'exam' && currentTest){
+      setTestDone(currentSeries, currentTest.id, {
+        lastScore: points,
+        lastCorrect: correct,
+        total: activeQuestions.length,
+        ts: Date.now()
+      });
+    }
+
     renderQuestion();
     const summary = 'Số câu đúng: ' + correct + ' / ' + activeQuestions.length
+      + ' • Điểm: ' + points + ' / ' + maxPoints
       + (currentMode === 'practice' ? ' • Chế độ luyện tập' : '')
       + (correct === activeQuestions.length && activeQuestions.length > 0 ? ' • Chúc mừng, bạn làm đúng hết!' : '');
     showResultPage(summary);
   }
 
-  searchInput.addEventListener('input', function(){
-    const keyword = searchInput.value.trim().toLowerCase();
-    testGrid.querySelectorAll('.test-card').forEach(card => {
-      const title = card.getAttribute('data-title') || '';
-      card.style.display = title.includes(keyword) ? '' : 'none';
+  if(searchInput){
+    searchInput.addEventListener('input', applyHomeFilters);
+  }
+
+  if(statusText){
+    statusText.addEventListener('click', function(){
+      homeFilterUndoneOnly = !homeFilterUndoneOnly;
+      applyHomeFilters();
     });
-  });
+  }
 
   closeModalBtn.addEventListener('click', closeModal);
   modeModal.addEventListener('click', function(e){
@@ -867,9 +973,18 @@
     applyQuestionBank('ets2026');
   }
 
+  function updateSeriesTabCounts(){
+    if(!seriesTabs) return;
+    const tab2026 = seriesTabs.querySelector('.tab[data-series="ets2026"]');
+    const tab2024 = seriesTabs.querySelector('.tab[data-series="ets2024"]');
+    if(tab2026) tab2026.textContent = 'ETS 2026 (' + (bankEts2026.length || 0) + ')';
+    if(tab2024) tab2024.textContent = 'ETS 2024 (' + (bankEts2024.length || 0) + ')';
+  }
+
   async function init(){
     try{
       await loadDataJson();
+      updateSeriesTabCounts();
     }catch(err){
       console.error(err);
     }

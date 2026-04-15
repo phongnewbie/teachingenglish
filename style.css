@@ -69,7 +69,9 @@ button,input{font-family:inherit}
   gap:8px;
   color:#12233f;
   font-size:18px;
-  font-weight:700
+  font-weight:700;
+  cursor:pointer;
+  user-select:none
 }
 .status-text svg{
   width:20px;
